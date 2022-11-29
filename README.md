@@ -1,10 +1,12 @@
 # qb-jobCreator
 
 DESCRIPTION
+
     Script that allows you to create unlimited locations for duty points, stashes, trashes, armories, garages, blips and zones
     Everything for certain job
 
 FEATURES
+
     - All showed labels working only through floating 3DTexts at the moment
     - Blips visible only for jobs (only blip locations)
     - Trashes getting deleted every server or script restart
