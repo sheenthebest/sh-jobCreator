@@ -6,28 +6,7 @@ local JobData = {}
 local onDuty = nil
 local looping = false
 
---------------
--- FUNCTIONS
---------------
-
-local function Init(job)
-    local table = Config.Jobs[job]
-    if not table then return end
-    
-    if table.enableBlips then
-        JobData["blips"] = table.blips
-        CreateBlips(JobData["blips"])
-    end
-    if table.duty.enable then JobData["duty"] = table.duty end
-    if table.stash.enable then JobData["stashes"] = table.stash end
-    if table.trash.enable then JobData["trashes"] = table.trash end
-    if table.equipment.enable then JobData["equipment"] = table.equipment end
-    if table.garage.enable then JobData["garages"] = table.garage end
-    if table.zones and next(table.zones) then JobData["zones"] = table.zones end
-
-    LoadLoop(true)
-end
-
+-- functions --
 local function GiveKeys(veh)
     TriggerEvent("vehiclekeys:client:SetOwner", QBCore.Functions.GetPlate(veh))
 end
@@ -36,20 +15,6 @@ local function hasJob()
     local jobExist = Config.Jobs[PlayerJob.name]
     if jobExist then return true end
     return false
-end
-
-local function CreateBlips(data)
-    for k, v in pairs(data) do
-        local blip = AddBlipForCoord(v.coords.x, v.coords.y, v.coords.z)
-        SetBlipSprite(blip, v.sprite)
-        SetBlipAsShortRange(blip, true)
-        SetBlipScale(blip, v.scale)
-        SetBlipColour(blip, v.colour)
-        BeginTextCommandSetBlipName("STRING")
-        AddTextComponentString(v.label)
-        EndTextCommandSetBlipName(blip)
-        CurrentBlips[#CurrentBlips + 1] = blip
-    end
 end
 
 local function Duty()
@@ -110,11 +75,22 @@ local function DrawText3D(x, y, z, text)
     ClearDrawOrigin()
 end
 
---------------
--- LOOP
---------------
+local function CreateBlips(data)
+    for k, v in pairs(data) do
+        local blip = AddBlipForCoord(v.coords.x, v.coords.y, v.coords.z)
+        SetBlipSprite(blip, v.sprite)
+        SetBlipAsShortRange(blip, true)
+        SetBlipScale(blip, v.scale)
+        SetBlipColour(blip, v.colour)
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString(v.label)
+        EndTextCommandSetBlipName(blip)
+        CurrentBlips[#CurrentBlips + 1] = blip
+    end
+end
 
-local function LoadLoop(bool)
+-- main loop --
+function LoadLoop(bool)
     if looping == bool then return end -- spam protection
     looping = bool
 
@@ -280,10 +256,26 @@ local function LoadLoop(bool)
     end)
 end
 
---------------
--- EVENTS
---------------
+local function Init(job)
+    local table = Config.Jobs[job]
+    if not table then return end
+    
+    if table.enableBlips then
+        JobData.blips = table.blips
+        CreateBlips(JobData.blips)
+    end
+    if table.duty.enable then JobData.duty = table.duty end
+    if table.stash.enable then JobData.stashes = table.stash end
+    if table.trash.enable then JobData.trashes = table.trash end
+    if table.equipment.enable then JobData.equipment = table.equipment end
+    if table.garage.enable then JobData.garages = table.garage end
+    if table.zones and next(table.zones) then JobData.zones = table.zones end
 
+    LoadLoop(true)
+end
+
+
+-- events --
 RegisterNetEvent("jobCreator:cl:SpawnVehicle", function(data)
     if hasJob() then
         QBCore.Functions.TriggerCallback('QBCore:Server:SpawnVehicle', function(netId)
@@ -313,36 +305,28 @@ RegisterNetEvent('QBCore:Client:OnJobUpdate', function(JobInfo)
     onDuty = PlayerJob.onduty
 
     LoadLoop(false)
-    if next(CurrentBlips) then
-        for k, v in pairs(CurrentBlips) do
-            RemoveBlip(v)
-        end
-    end
+
+    if next(CurrentBlips) then for k, v in pairs(CurrentBlips) do RemoveBlip(v) end end
     JobData = {}
     Wait(500)
     Init(PlayerJob.name)
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
-    PlayerData = {}
-    PlayerJob = {}
-    JobData = {}
+    PlayerData, PlayerJob, JobData = {}, {}, {}
     LoadLoop(false)
-
-    if next(CurrentBlips) then
-        for k, v in pairs(CurrentBlips) do
-            RemoveBlip(v)
-        end
-    end
+    if next(CurrentBlips) then for k, v in pairs(CurrentBlips) do RemoveBlip(v) end end
 end)
 
 AddEventHandler('onResourceStart', function(resource)
     if resource == GetCurrentResourceName() then
         Wait(100)
-        PlayerData = QBCore.Functions.GetPlayerData()
-        PlayerJob = PlayerData.job
-        onDuty = PlayerJob.onduty
-        Init(PlayerJob.name)
+        if LocalPlayer.state.isLoggedIn then
+            PlayerData = QBCore.Functions.GetPlayerData()
+            PlayerJob = PlayerData.job
+            onDuty = PlayerJob.onduty
+            Init(PlayerJob.name)
+        end
     end
 end)
 
